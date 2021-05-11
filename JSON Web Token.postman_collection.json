@@ -1,0 +1,117 @@
+{
+	"info": {
+		"_postman_id": "f55f1364-dcc7-4886-ab08-28adad93a0f4",
+		"name": "JSON Web Token",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "JWT creation example",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Enter the json object of the header in the following variable.\r",
+							"let header = {\r",
+							"    \"alg\": \"HS256\",\r",
+							"    \"typ\": \"JWT\"\r",
+							"};\r",
+							"\r",
+							"// Enter the json object of the payload in the following variable.\r",
+							"let payload = {\r",
+							"    \"sub\": pm.environment.get(\"testSubject\"),\r",
+							"    \"iss\": pm.environment.get(\"testIssuer\")\r",
+							"};\r",
+							"\r",
+							"let secret = pm.environment.get(\"testSecret\");\r",
+							"\r",
+							"\r",
+							"let token = createToken(header, payload, secret);\r",
+							"pm.globals.set(\"token\", token);\r",
+							"\r",
+							"\r",
+							"function createToken(header, payload, secret) {\r",
+							"    let encodedHeader = b64UrlEncode(header);\r",
+							"    let encodedPayload = b64UrlEncode(payload);\r",
+							"\r",
+							"    let signature = createSignature(encodedHeader + \".\" + encodedPayload, secret);\r",
+							"\r",
+							"    return encodedHeader + \".\" + encodedPayload + \".\" + signature;\r",
+							"}\r",
+							"\r",
+							"function createSignature(message, secret) {\r",
+							"    return urlEncode(CryptoJS.HmacSHA256(message, secret).toString(CryptoJS.enc.Base64));\r",
+							"}\r",
+							"\r",
+							"function b64UrlEncode(item) {\r",
+							"    return urlEncode(CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(JSON.stringify(item))));\r",
+							"}\r",
+							"\r",
+							"function urlEncode(item) {\r",
+							"    return item.replace(/=/g, '').replace(/\\+/g, '-').replace(/\\//g, '_');\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"JWT was created successfully\", function () {\r",
+							"    let data = pm.response.json().data;\r",
+							"    pm.expect(data).to.have.property(\"actualToken\");\r",
+							"\r",
+							"    // Compare the token recently built with a token built by a JWT debugger.\r",
+							"    pm.expect(data.actualToken).to.eql(pm.environment.get(\"expectedToken\"));\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"actualToken\": \"{{token}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "postman-echo.com/post",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"post"
+					]
+				},
+				"description": "This request contains an example of how to create a **JSON web token** using the Postman Sandbox.\n\nHow to use it:\n1. Add the header of the jwt to the `header` variable in the `Pre-request Script` section.\n2. Add the payload of the jwt to the `payload` variable in the `Pre-request Script` section.\n3. Create an environment variable called `secret` and add there the value of the jwt secret.\n4. Create an environment variable called `expectedToken` and add there the value of a token built in the debugger from `https://jwt.io/` with exactly the same data you used in this request.\n5. Send the request.\n6. Check all tests from the `Tests` section passed."
+			},
+			"response": []
+		}
+	]
+}
